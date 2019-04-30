@@ -41,6 +41,18 @@ public:
 	}
 };
 
+class InvalidInputException {
+private:
+	string msg;
+public:
+	InvalidInputException() {
+		msg = "Error: Invalid Input Type.\n";
+	}
+	string getMessage() {
+		return msg;
+	}
+};
+
 // program function prototypes
 void newCamper(Camper[], int&, int&);
 void addFood(list<Food*>&);
@@ -49,23 +61,44 @@ void addPayment(Camper[]);
 void displayMenu();
 
 // program function definitions
-
 void newCamper(Camper arr[], int& cs, int& ms) {
 	if (cs < ms) {
 		string inputName;
 		cout << endl;
 		cout << "-INPUT A NEW CAMPER-" << endl;
 		cout << "Please enter camper name: ";
-		cin.ignore();
-		getline(cin, inputName);
-		arr[cs] = Camper(inputName);
-		cs++;
 
-		cout << endl;
-		cout << "***************************************************" << endl;
-		cout << "Created Camper: " + arr[(cs - 1)].display() << endl;
-		cout << "***************************************************" << endl;
-		cout << endl;
+		try {
+			// if cin successfully saves input
+			if (getline(cin, inputName)) {
+
+				// check each character to ensure it is alphabetic or whitespace (no numbers, symbols allowed)
+				for (int i = 0; i < inputName.length(); i++) {
+					if (!isalpha(inputName[i]) && !isspace(inputName[i])) {
+						throw InvalidInputException();
+					}
+				}
+
+				// if no exception has been thrown yet, save camper and increment counter
+				arr[cs] = Camper(inputName);
+				cs++;
+
+				// notify user
+				cout << endl;
+				cout << "***************************************************" << endl;
+				cout << "Created Camper: " + arr[(cs - 1)].display() << endl;
+				cout << "***************************************************" << endl;
+				cout << endl;
+			}
+			else {   // if CIN fails, throw exception
+				throw InvalidInputException();
+			}
+		}
+		// catch any of the exceptions thrown.
+		catch (InvalidInputException ex) {
+			cout << endl;
+			cout << ex.getMessage();
+		}
 	}
 	else {
 		throw TooManyCampersException();
@@ -83,8 +116,16 @@ void addFood(list<Food*>& l) {
 	cout << endl;
 	cout << "-INPUT A NEW FOOD-" << endl;
 	cout << "Please enter the type of food (Doritos, Potatos, Hot Dogs, etc.): ";
-	cin.ignore();
-	getline(cin, inputType);
+	try {
+		if (!getline(cin, inputType)) {
+			throw InvalidInputException();
+		}
+	}
+	catch (InvalidInputException ex) {
+		cout << endl;
+		cout << ex.getMessage();
+		inputType = "DEFAULT TYPE";
+	}
 
 	bool foodExists = false;
 	for (Food* f : l) 
@@ -98,9 +139,17 @@ void addFood(list<Food*>& l) {
 			cout << "To modify the existing food entry, press 1" << endl;
 			cout << "To cancel this addition to the list, press any other key" << endl;
 			cout << "INPUT SELECTION>: ";
-			cin.get(inputSubMenu);
-			cout << endl;
-			cout << "You chose: " + inputSubMenu;
+			if (cin >> inputSubMenu) {
+				if (inputSubMenu != '1') {
+					cin.clear();
+					inputSubMenu = 0;
+				}
+			}
+			else {
+				cin.clear();
+				inputSubMenu = 0;
+			}
+			cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
 			break;
 		}
 	}
@@ -109,7 +158,7 @@ void addFood(list<Food*>& l) {
 	{
 		if (inputSubMenu == '1') 
 		{
-			inputSubMenu = 0;
+			inputSubMenu = '0';
 			while (inputSubMenu != '4') 
 			{
 				cout << endl;
@@ -122,14 +171,18 @@ void addFood(list<Food*>& l) {
 				cout << "4) Quit modifying item" << endl;
 				cout << endl;
 				cout << "INPUT SELECTION>: ";
-				cin >> inputSubMenu;
-
-				while (inputSubMenu < '1' && inputSubMenu > '4') 
-				{
-					cout << "INVALID SELECTION. Please select a value of 1, 2, 3, or 4" << endl;
-					cout << "INPUT SELECTION>: ";
-					cin >> inputSubMenu;
+				if (cin >> inputSubMenu) {
+					if (inputSubMenu != '1' && inputSubMenu != '2' && inputSubMenu != '3' && inputSubMenu !='4') {
+						cin.clear();
+						cout << "Invalid Input";
+						inputSubMenu = 0;
+					}
 				}
+				else {
+					cin.clear();
+					inputSubMenu = 0;
+				}
+				cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
 
 				string modifyPropertyString;
 				int modifyPropertyInt;
@@ -139,39 +192,67 @@ void addFood(list<Food*>& l) {
 						// enter new name
 						cout << endl;
 						cout << "Enter new name: ";
-						cin.ignore();
-						getline(cin, modifyPropertyString);
-						cout << endl;
-						tempFoodPtr->setName(modifyPropertyString);
+						//cin.ignore();
+						try {
+							if (!getline(cin, modifyPropertyString)) {
+								throw InvalidInputException();
+							}
+							cout << endl;
+							tempFoodPtr->setName(modifyPropertyString);
 
-						cout << endl;
-						cout << "***************************************************" << endl;
-						cout << "Name successfully changed." << endl;
+							cout << endl;
+							cout << "***************************************************" << endl;
+							cout << "Name successfully changed." << endl;
+						}
+						catch (InvalidInputException ex) {
+							cout << endl;
+							cout << ex.getMessage();
+						}
 						break;
 					case '2':
 						// enter new quantity
 						cout << endl;
 						cout << "Enter new quantity: ";
-						cin >> modifyPropertyInt;
-						cout << endl;
-						tempFoodPtr->setQuantity(modifyPropertyInt);
+						try {
+							if (cin >> modifyPropertyInt) {
+								cin.clear();
+								cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+							}
+							else {
+								throw InvalidInputException();
+							}
+							cout << endl;
+							tempFoodPtr->setQuantity(modifyPropertyInt);
 
-						cout << endl;
-						cout << "***************************************************" << endl;
-						cout << "Quantity successfully changed." << endl;
+							cout << endl;
+							cout << "***************************************************" << endl;
+							cout << "Quantity successfully changed." << endl;
+						}
+						catch (InvalidInputException ex) {
+							cout << endl;
+							cout << ex.getMessage();
+						}
+						
 						break;
 					case '3':
 						// enter new metric
 						cout << endl;
 						cout << "Enter new metric: ";
-						cin.ignore();
-						getline(cin, modifyPropertyString);
-						cout << endl;
-						tempFoodPtr->setMetric(modifyPropertyString);
+						//cin.ignore();
+						try {
+							if (!getline(cin, modifyPropertyString)) {
+								throw InvalidInputException();
+							}
+							cout << endl;
+							tempFoodPtr->setMetric(modifyPropertyString);
 
-						cout << endl;
-						cout << "***************************************************" << endl;
-						cout << "Metric successfully changed." << endl;
+							cout << endl;
+							cout << "***************************************************" << endl;
+							cout << "Metric successfully changed." << endl;
+						}
+						catch (InvalidInputException ex) {
+
+						}
 						break;
 					default:
 						break;
@@ -186,9 +267,35 @@ void addFood(list<Food*>& l) {
 	else
 	{
 		cout << "Please enter the metric used (lbs, cans, bags, etc.): ";
-		getline(cin, inputMetric);
+		try {
+			if (!getline(cin, inputMetric)) {
+				throw InvalidInputException();
+			}
+		}
+		catch (InvalidInputException ex) {
+			cout << endl;
+			cout << ex.getMessage();
+			inputMetric = "INVALID METRIC";
+		}
+
 		cout << "Please enter the quantity as a whole number (1, 5, 9, etc.): ";
-		cin >> inputQuantity;
+		try {
+			if (cin >> inputQuantity) {
+				cin.clear();
+				cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+			}
+			else {
+				cin.clear();
+				cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+				throw InvalidInputException();
+			}
+		}
+		catch (InvalidInputException ex) {
+			cout << endl;
+			cout << ex.getMessage();
+			inputQuantity = 0;
+		}
+
 		//Food temp(inputType, inputQuantity, inputMetric);
 		l.push_front(new Food(inputType, inputQuantity, inputMetric));
 
@@ -213,7 +320,19 @@ void assignFood(Camper *arr, int as, list<Food*>& l, list<FoodCamper>& fc) {
 	cout << endl;
 	cout << "-ASSIGN FOOD TO CAMPER-" << endl;
 	cout << "Please enter a camper's name: ";
-	cin >> inputName;
+	try {
+		if (!(cin >> inputName)) {
+			throw InvalidInputException();
+		}
+		cin.clear();
+		cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+	}
+	catch (InvalidInputException ex) {
+		cin.clear();
+		cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+		cout << endl;
+		cout << ex.getMessage();
+	}
 
 	for (int i = 0; i < as && !foundCamper; i++) {
 		string temp = arr[i].getName();
@@ -228,9 +347,20 @@ void assignFood(Camper *arr, int as, list<Food*>& l, list<FoodCamper>& fc) {
 	if (foundCamper) {
 		// assign food logic
 		cout << "Assign food to camper: " + inputName << endl;
+		cout << endl;
 		cout << "Enter Food to Assign: ";
-		cin.ignore();
-		getline(cin, inputFood);
+		//cin.ignore();
+		try {
+			if (!getline(cin, inputFood)) {
+				throw InvalidInputException();
+			}
+		}
+		catch (InvalidInputException ex) {
+			cin.clear();
+			cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+			cout << endl;
+			cout << ex.getMessage();
+		}
 
 		for (Food* f : l) {
 			if (inputFood._Equal(f->getName())) {
@@ -269,8 +399,18 @@ void addPayment(Camper *arr, int as) {
 	cout << endl;
 	cout << "-ASSIGN PAYMENT FOR CAMPER-" << endl;
 	cout << "Please enter a camper's name: ";
-	cin.ignore();
-	getline(cin, inputName);
+	//cin.ignore();
+	try {
+		if (!getline(cin, inputName)) {
+			throw InvalidInputException();
+		}
+	}
+	catch (InvalidInputException ex) {
+		cin.clear();
+		cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+		cout << endl;
+		cout << ex.getMessage();
+	}
 
 	for (int i = 0; i < as && !foundCamper; i++) {
 		string temp = arr[i].getName();
